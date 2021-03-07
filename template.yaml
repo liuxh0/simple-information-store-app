@@ -21,6 +21,20 @@ Resources:
       PrimaryKey:
         Name: Id
         Type: String
+  CreateValueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/create-value
+      Runtime: go1.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ValueTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /i
+            Method: post
   GetValueFunction:
     Type: AWS::Serverless::Function
     Properties:

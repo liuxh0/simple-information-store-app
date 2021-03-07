@@ -19,14 +19,15 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
 		TableName: &tableName,
 		Key: map[string]*dynamodb.AttributeValue{
-			"Id": {
-				S: &id,
-			},
+			"Id": {S: &id},
 		},
 	})
 
 	if err != nil {
 		fmt.Printf("Error when retrieving item: %s\n", err.Error())
+		return events.APIGatewayProxyResponse{
+			StatusCode: 500,
+		}, nil
 	}
 
 	if result.Item == nil {
