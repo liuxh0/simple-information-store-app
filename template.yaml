@@ -8,6 +8,7 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
+    Runtime: go1.x
     Handler: simple-information-store-app
     Timeout: 5
     Environment:
@@ -25,7 +26,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: handlers/create-value
-      Runtime: go1.x
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ValueTable
@@ -39,7 +39,6 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: handlers/get-value
-      Runtime: go1.x
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ValueTable
@@ -49,11 +48,23 @@ Resources:
           Properties:
             Path: /i/{id+}
             Method: get
+  UpdateValueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/update-value
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ValueTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /i/{id+}
+            Method: put
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: handlers/hello-world
-      Runtime: go1.x
       Tracing: Active # https://docs.aws.amazon.com/lambda/latest/dg/lambda-x-ray.html
       Events:
         CatchAll:

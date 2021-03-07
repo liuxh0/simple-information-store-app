@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"simple-information-store-app/internal/awshelper"
 	"simple-information-store-app/internal/env"
+	"simple-information-store-app/internal/helper"
+	"simple-information-store-app/internal/helper/awshelper"
+	"simple-information-store-app/internal/service"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -13,15 +15,13 @@ import (
 	"github.com/google/uuid"
 )
 
-const ValueMaxLen = 1000
-
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	body := request.Body
 
-	if bodyLen := len(body); bodyLen > ValueMaxLen {
+	if bodyLen := len(body); bodyLen > service.ValueMaxLen {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 400,
-			Body:       fmt.Sprintf("Actual length %d is greater than allowed length %d.", bodyLen, ValueMaxLen),
+			Body:       fmt.Sprintf("Actual length %d is greater than allowed length %d.", bodyLen, service.ValueMaxLen),
 		}, nil
 	}
 
@@ -30,10 +30,9 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	dynamoDbClient := awshelper.GetDynamoDbClient()
 	tableName := env.GetValueTableName()
-	conditionExpression := "attribute_not_exists(Id)"
 	_, err := dynamoDbClient.PutItem(&dynamodb.PutItemInput{
 		TableName:           &tableName,
-		ConditionExpression: &conditionExpression,
+		ConditionExpression: helper.PointerToString("attribute_not_exists(Id)"),
 		Item: map[string]*dynamodb.AttributeValue{
 			"Id":    {S: &id},
 			"Value": {S: &body},
