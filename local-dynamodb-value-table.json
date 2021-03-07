@@ -1,0 +1,10 @@
+{
+  "TableName": "simple-information-store-app-local-ValueTable",
+  "KeySchema": [
+    { "AttributeName": "Id", "KeyType": "HASH" }
+  ],
+  "AttributeDefinitions": [
+    { "AttributeName": "Id", "AttributeType": "S" }
+  ],
+  "BillingMode": "PAY_PER_REQUEST"
+}

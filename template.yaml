@@ -10,8 +10,31 @@ Globals:
   Function:
     Handler: simple-information-store-app
     Timeout: 5
+    Environment:
+      Variables:
+        VALUE_TABLE_REF: !Ref ValueTable
 
 Resources:
+  ValueTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: Id
+        Type: String
+  GetValueFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: handlers/get-value
+      Runtime: go1.x
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ValueTable
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /i/{id+}
+            Method: get
   HelloWorldFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
