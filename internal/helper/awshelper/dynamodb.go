@@ -10,6 +10,7 @@ import (
 
 var sharedDynamoDbClient *dynamodb.DynamoDB
 
+// GetDynamoDbClient returns a shared DynamoDB client.
 func GetDynamoDbClient() *dynamodb.DynamoDB {
 	if sharedDynamoDbClient == nil {
 		sess := session.Must(session.NewSession())

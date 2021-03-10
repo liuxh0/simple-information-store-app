@@ -32,7 +32,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	tableName := env.GetValueTableName()
 	_, err := dynamoDbClient.PutItem(&dynamodb.PutItemInput{
 		TableName:           &tableName,
-		ConditionExpression: helper.PointerToString("attribute_not_exists(Id)"),
+		ConditionExpression: helper.StringPtr("attribute_not_exists(Id)"),
 		Item: map[string]*dynamodb.AttributeValue{
 			"Id":    {S: &id},
 			"Value": {S: &body},

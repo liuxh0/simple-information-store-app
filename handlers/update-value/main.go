@@ -31,9 +31,9 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		Key: map[string]*dynamodb.AttributeValue{
 			"Id": {S: &id},
 		},
-		UpdateExpression: helper.PointerToString("set #Value = :value"),
+		UpdateExpression: helper.StringPtr("set #Value = :value"),
 		ExpressionAttributeNames: map[string]*string{
-			"#Value": helper.PointerToString("Value"),
+			"#Value": helper.StringPtr("Value"),
 		},
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
 			":value": {S: &value},

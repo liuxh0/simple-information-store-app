@@ -1,5 +1,6 @@
 package helper
 
-func PointerToString(s string) *string {
+// StringPtr returns a pointer to the string.
+func StringPtr(s string) *string {
 	return &s
 }

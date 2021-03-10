@@ -8,6 +8,7 @@ func RunningInSamLocal() bool {
 	return ok
 }
 
+// GetDynamoDbEndpoint returns the DynamoDB endpoint according to running environment.
 func GetDynamoDbEndpoint() string {
 	if RunningInSamLocal() {
 		return "http://docker.for.mac.localhost:8000"
@@ -15,6 +16,7 @@ func GetDynamoDbEndpoint() string {
 	return ""
 }
 
+// GetValueTableName returns the name for ValueTable according to running environment.
 func GetValueTableName() string {
 	if RunningInSamLocal() {
 		return "simple-information-store-app-local-ValueTable"
