@@ -51,7 +51,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	}
 	responseBodyBytes, _ := json.Marshal(responseBody)
 	return events.APIGatewayProxyResponse{
-		StatusCode: 200,
+		StatusCode: 201,
 		Body:       string(responseBodyBytes),
 	}, nil
 }
