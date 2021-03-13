@@ -14,7 +14,7 @@ import (
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	id := request.PathParameters["id"]
 
-	dynamoDbClient := awshelper.GetDynamoDbClient()
+	dynamoDbClient := awshelper.GetDynamoDbClient(env.GetDynamoDbEndpoint())
 	tableName := env.GetValueTableName()
 	result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
 		TableName: &tableName,

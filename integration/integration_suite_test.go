@@ -6,13 +6,14 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
-	"os/exec"
+	"simple-information-store-app/internal/env"
+	"simple-information-store-app/internal/helper/awshelper"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -22,30 +23,29 @@ func TestIntegration(t *testing.T) {
 	RunSpecs(t, "IntegrationSuite")
 }
 
-var samCmd *exec.Cmd
+const (
+	samHost          = "http://localhost:3000"
+	dynamoDbEndpoint = "http://localhost:8000"
+)
 
 var _ = BeforeSuite(func() {
-	By("Starting local server")
-	samCmd = exec.Command("sam", "local", "start-api")
-	samCmd.Dir = ".."
-	err := samCmd.Start()
-	Expect(err).ShouldNot(HaveOccurred())
-
-	By("Waiting until local server is ready")
-	Eventually(func() error {
-		_, err := http.Get("http://localhost:3000/hello")
-		return err
-	}, 10*time.Second).ShouldNot(HaveOccurred())
-})
-
-var _ = AfterSuite(func() {
 	var err error
 
-	err = samCmd.Process.Signal(os.Interrupt)
-	Expect(err).ShouldNot(HaveOccurred())
+	By("checking local server is running")
+	_, err = http.Get(samHost)
+	if err != nil {
+		Fail("SAM local is not running.")
+	}
 
-	err = samCmd.Wait()
-	Expect(err).ShouldNot(HaveOccurred())
+	By("checking local DynamoDB is running")
+	_, err = http.Get(dynamoDbEndpoint)
+	if err != nil {
+		Fail("Local DynamoDB is not running.")
+	}
+
+	By("setting environment variable AWS_SAM_LOCAL")
+	os.Setenv("AWS_SAM_LOCAL", "true")
+	os.Setenv("AWS_REGION", "eu-central-1")
 })
 
 var _ = Describe("POST /i", func() {
@@ -60,24 +60,21 @@ var _ = Describe("POST /i", func() {
 	})
 
 	JustBeforeEach(func() {
-		url := url.URL{
-			Scheme: "http",
-			Host:   "localhost:3000",
-			Path:   "/i",
-		}
 		var err error
-		resp, err = http.Post(url.String(), "", strings.NewReader(reqBody))
+
+		endpointUrl := fmt.Sprintf("%s/i", samHost)
+		resp, err = http.Post(endpointUrl, "", strings.NewReader(reqBody))
 		Expect(err).ShouldNot(HaveOccurred())
 
-		respBody = ReadReadCloserOrDie(resp.Body)
+		respBody = readReadCloserOrDie(resp.Body)
+		if id, ok := getStringFromJsonString(respBody, "id"); ok && resp.StatusCode == 201 {
+			fmt.Printf("Created item with id %s\n", id)
+		}
 	})
 
 	AfterEach(func() {
 		if id, ok := getStringFromJsonString(respBody, "id"); ok && resp.StatusCode == 201 {
-			fmt.Printf("Created with id %s\n", id)
-			// TODO: Delete created value
-		} else {
-			fmt.Println("Nothing created")
+			deleteItem(id)
 		}
 	})
 
@@ -111,7 +108,82 @@ var _ = Describe("POST /i", func() {
 	})
 })
 
-func ReadReadCloserOrDie(rc io.ReadCloser) string {
+var _ = Describe("GET /i/{id}", func() {
+	var (
+		id       string
+		resp     *http.Response
+		respBody string
+	)
+
+	BeforeEach(func() {
+		id = ""
+	})
+
+	JustBeforeEach(func() {
+		var err error
+
+		Expect(id).ShouldNot(BeEmpty())
+		endpintUrl := fmt.Sprintf("%s/i/%s", samHost, id)
+		resp, err = http.Get(endpintUrl)
+		Expect(err).ShouldNot(HaveOccurred())
+		respBody = readReadCloserOrDie(resp.Body)
+	})
+
+	When("id does not exist", func() {
+		BeforeEach(func() {
+			for { // Find out an id that does not exist in the table
+				id = uuid.NewString()
+
+				dynamoDbClient := awshelper.GetDynamoDbClient(dynamoDbEndpoint)
+				tableName := env.GetValueTableName()
+				result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
+					TableName: &tableName,
+					Key: map[string]*dynamodb.AttributeValue{
+						"Id": {S: &id},
+					},
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+
+				if result.Item == nil {
+					break
+				}
+			}
+		})
+
+		It("should return 404", func() {
+			Expect(resp.StatusCode).To(Equal(404))
+			Expect(respBody).To(BeEmpty())
+		})
+	})
+
+	When("id exists", func() {
+		const value = "Test value used by Integration test suite"
+
+		BeforeEach(func() { // Create a new item
+			endpointUrl := fmt.Sprintf("%s/i", samHost)
+			resp, err := http.Post(endpointUrl, "", strings.NewReader(value))
+			Expect(err).ShouldNot(HaveOccurred())
+			respBody := readReadCloserOrDie(resp.Body)
+			newId, ok := getStringFromJsonString(respBody, "id")
+			Expect(ok).To(BeTrue())
+			fmt.Printf("Created item with id %s\n", newId)
+
+			id = newId
+		})
+
+		AfterEach(func() { // Delete the new item created for the test
+			err := deleteItem(id)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+
+		It("should return 200 with the value", func() {
+			Expect(resp.StatusCode).To(Equal(200))
+			Expect(respBody).To(Equal(value))
+		})
+	})
+})
+
+func readReadCloserOrDie(rc io.ReadCloser) string {
 	bytes, err := ioutil.ReadAll(rc)
 	if err != nil {
 		panic(err)
@@ -143,4 +215,16 @@ func getStringFromJsonString(jsonString string, field string) (value string, ok 
 
 	value, ok = rawValue.(string)
 	return
+}
+
+func deleteItem(id string) error {
+	dynamoDbClient := awshelper.GetDynamoDbClient(dynamoDbEndpoint)
+	tableName := env.GetValueTableName()
+	_, err := dynamoDbClient.DeleteItem(&dynamodb.DeleteItemInput{
+		TableName: &tableName,
+		Key: map[string]*dynamodb.AttributeValue{
+			"Id": {S: &id},
+		},
+	})
+	return err
 }

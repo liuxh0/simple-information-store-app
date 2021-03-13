@@ -28,7 +28,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	// Generate an Id
 	id := uuid.New().String()
 
-	dynamoDbClient := awshelper.GetDynamoDbClient()
+	dynamoDbClient := awshelper.GetDynamoDbClient(env.GetDynamoDbEndpoint())
 	tableName := env.GetValueTableName()
 	_, err := dynamoDbClient.PutItem(&dynamodb.PutItemInput{
 		TableName:           &tableName,

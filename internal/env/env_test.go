@@ -67,7 +67,7 @@ var _ = Describe("GetDynamoDbEndpoint()", func() {
 		})
 
 		It("should return a local endpoint", func() {
-			Expect(ret).To(Equal("http://docker.for.mac.localhost:8000"))
+			Expect(ret).To(Equal("http://host.docker.internal:8000"))
 		})
 	})
 })

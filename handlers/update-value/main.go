@@ -24,7 +24,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 		}, nil
 	}
 
-	dynamoDbClient := awshelper.GetDynamoDbClient()
+	dynamoDbClient := awshelper.GetDynamoDbClient(env.GetDynamoDbEndpoint())
 	tableName := env.GetValueTableName()
 	_, err := dynamoDbClient.UpdateItem(&dynamodb.UpdateItemInput{
 		TableName: &tableName,

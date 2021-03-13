@@ -11,7 +11,7 @@ func RunningInSamLocal() bool {
 // GetDynamoDbEndpoint returns the DynamoDB endpoint according to running environment.
 func GetDynamoDbEndpoint() string {
 	if RunningInSamLocal() {
-		return "http://docker.for.mac.localhost:8000"
+		return "http://host.docker.internal:8000"
 	}
 	return ""
 }
