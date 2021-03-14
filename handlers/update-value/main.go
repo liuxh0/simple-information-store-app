@@ -17,6 +17,8 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	id := request.PathParameters["id"]
 	value := request.Body
 
+	var err error
+
 	if valueLen := len(value); valueLen > service.ValueMaxLen {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 400,
@@ -26,12 +28,36 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 
 	dynamoDbClient := awshelper.GetDynamoDbClient(env.GetDynamoDbEndpoint())
 	tableName := env.GetValueTableName()
-	_, err := dynamoDbClient.UpdateItem(&dynamodb.UpdateItemInput{
+
+	// First check if the id exists
+	result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
 		TableName: &tableName,
 		Key: map[string]*dynamodb.AttributeValue{
 			"Id": {S: &id},
 		},
-		UpdateExpression: helper.StringPtr("set #Value = :value"),
+	})
+
+	if err != nil {
+		fmt.Printf("Error when getting item: %s\n", err.Error())
+		return events.APIGatewayProxyResponse{
+			StatusCode: 500,
+		}, nil
+	}
+
+	if result.Item == nil {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 404,
+		}, nil
+	}
+
+	// If the id exists, update the value
+	_, err = dynamoDbClient.UpdateItem(&dynamodb.UpdateItemInput{
+		TableName: &tableName,
+		Key: map[string]*dynamodb.AttributeValue{
+			"Id": {S: &id},
+		},
+		ConditionExpression: helper.StringPtr("attribute_exists(Id)"),
+		UpdateExpression:    helper.StringPtr("set #Value = :value"),
 		ExpressionAttributeNames: map[string]*string{
 			"#Value": helper.StringPtr("Value"),
 		},
