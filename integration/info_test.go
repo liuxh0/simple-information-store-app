@@ -3,9 +3,9 @@ package integration_test
 import (
 	"fmt"
 	"net/http"
+	"simple-information-store-app/internal/service"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -37,7 +37,7 @@ var _ = Describe("POST /i", func() {
 
 	AfterEach(func() {
 		if id, ok := getStringFromJsonString(respBody, "id"); ok && resp.StatusCode == 201 {
-			deleteItem(id)
+			service.DeleteInfo(id)
 		}
 	})
 
@@ -94,20 +94,7 @@ var _ = Describe("GET /i/{id}", func() {
 
 	When("id does not exist", func() {
 		BeforeEach(func() {
-			for { // Find out an id that does not exist in the table
-				id = uuid.NewString()
-				result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
-					TableName: &valueTableName,
-					Key: map[string]*dynamodb.AttributeValue{
-						"Id": {S: &id},
-					},
-				})
-				Expect(err).ShouldNot(HaveOccurred())
-
-				if result.Item == nil {
-					break
-				}
-			}
+			id = generateNonExistingId()
 		})
 
 		It("should return 404", func() {
@@ -133,8 +120,11 @@ var _ = Describe("GET /i/{id}", func() {
 		})
 
 		AfterEach(func() { // Delete the new item created for the test
-			err := deleteItem(id)
-			Expect(err).ShouldNot(HaveOccurred())
+			err := service.DeleteInfo(id)
+			if err != nil {
+				panic(err)
+			}
+
 		})
 
 		It("should return 200 with the value", func() {
@@ -173,20 +163,7 @@ var _ = Describe("PUT /i/{id}", func() {
 
 	When("id does not exist", func() {
 		BeforeEach(func() {
-			for { // Find out an id that does not exist in the table
-				id = uuid.NewString()
-				result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
-					TableName: &valueTableName,
-					Key: map[string]*dynamodb.AttributeValue{
-						"Id": {S: &id},
-					},
-				})
-				Expect(err).ShouldNot(HaveOccurred())
-
-				if result.Item == nil {
-					break
-				}
-			}
+			id = generateNonExistingId()
 		})
 
 		It("should return 404", func() {
@@ -222,8 +199,10 @@ var _ = Describe("PUT /i/{id}", func() {
 		})
 
 		AfterEach(func() { // Delete the new item created for the test
-			err := deleteItem(id)
-			Expect(err).ShouldNot(HaveOccurred())
+			err := service.DeleteInfo(id)
+			if err != nil {
+				panic(err)
+			}
 		})
 
 		It("should return 200", func() {
@@ -231,18 +210,12 @@ var _ = Describe("PUT /i/{id}", func() {
 			Expect(respBody).To(BeEmpty())
 
 			By("checking if the value is updated", func() {
-				result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
-					TableName: &valueTableName,
-					Key: map[string]*dynamodb.AttributeValue{
-						"Id": {S: &id},
-					},
-				})
-
+				info, err := service.GetInfo(id)
 				if err != nil {
 					panic(err)
 				}
 
-				Expect(*result.Item["Value"].S).To(Equal(reqBody))
+				Expect(info.Value).To(Equal(reqBody))
 			})
 		})
 
@@ -257,3 +230,18 @@ var _ = Describe("PUT /i/{id}", func() {
 		})
 	})
 })
+
+func generateNonExistingId() string {
+	for {
+		id := uuid.NewString()
+		_, err := service.GetInfo(id)
+		switch err := err.(type) {
+		case service.InfoNotFoundError:
+			return id
+		case nil:
+			continue
+		default:
+			panic(err)
+		}
+	}
+}

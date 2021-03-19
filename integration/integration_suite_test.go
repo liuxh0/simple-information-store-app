@@ -7,10 +7,8 @@ import (
 	"net/http"
 	"os"
 	"simple-information-store-app/internal/env"
-	"simple-information-store-app/internal/helper/awshelper"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -21,17 +19,15 @@ func TestIntegration(t *testing.T) {
 }
 
 const (
-	samHost          = "http://localhost:3000"
-	dynamoDbEndpoint = "http://localhost:8000"
-)
-
-var (
-	dynamoDbClient *dynamodb.DynamoDB
-	valueTableName string
+	samHost = "http://localhost:3000"
 )
 
 var _ = BeforeSuite(func() {
 	var err error
+
+	By("setting environment variable")
+	os.Setenv("GINKGO_TEST", "true")
+	os.Setenv("AWS_REGION", "eu-central-1")
 
 	By("checking local server is running")
 	_, err = http.Get(samHost)
@@ -40,18 +36,12 @@ var _ = BeforeSuite(func() {
 	}
 
 	By("checking local DynamoDB is running")
+	dynamoDbEndpoint := env.GetDynamoDbEndpoint()
+	Expect(dynamoDbEndpoint).To(ContainSubstring("localhost"))
 	_, err = http.Get(dynamoDbEndpoint)
 	if err != nil {
 		Fail("Local DynamoDB is not running.")
 	}
-
-	By("setting environment variable AWS_SAM_LOCAL")
-	os.Setenv("AWS_SAM_LOCAL", "true")
-	os.Setenv("AWS_REGION", "eu-central-1")
-
-	By("initializing variables")
-	dynamoDbClient = awshelper.GetDynamoDbClient(dynamoDbEndpoint)
-	valueTableName = env.GetValueTableName()
 })
 
 func readReadCloserOrDie(rc io.ReadCloser) string {
@@ -86,14 +76,4 @@ func getStringFromJsonString(jsonString string, field string) (value string, ok 
 
 	value, ok = rawValue.(string)
 	return
-}
-
-func deleteItem(id string) error {
-	_, err := dynamoDbClient.DeleteItem(&dynamodb.DeleteItemInput{
-		TableName: &valueTableName,
-		Key: map[string]*dynamodb.AttributeValue{
-			"Id": {S: &id},
-		},
-	})
-	return err
 }
