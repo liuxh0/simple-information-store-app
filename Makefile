@@ -1,4 +1,4 @@
-.PHONY: test test-unit test-integration build init-local-dynamodb serve
+.PHONY: test test-unit test-integration build init-local-dynamodb serve deploy
 
 test: test-unit test-integration
 
@@ -16,3 +16,6 @@ init-local-dynamodb:
 
 serve: build
 	sam local start-api
+
+deploy: build
+	sam deploy
