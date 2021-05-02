@@ -12,7 +12,7 @@ import (
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	id := request.PathParameters["id"]
 
-	info, err := service.GetInfo(id)
+	info, err := service.NewInfoService().GetInfo(id)
 	switch err := err.(type) {
 	case nil:
 		break

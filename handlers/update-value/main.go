@@ -13,7 +13,7 @@ func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	id := request.PathParameters["id"]
 	value := request.Body
 
-	_, err := service.UpdateInfo(id, value)
+	_, err := service.NewInfoService().UpdateInfo(id, value)
 	switch err := err.(type) {
 	case nil:
 		break

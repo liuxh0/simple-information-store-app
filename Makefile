@@ -3,7 +3,8 @@
 test: test-unit test-integration
 
 test-unit:
-	ginkgo -r -skipPackage=integration
+	go generate ./...
+	ginkgo -r -skipPackage=integration -keepGoing
 
 test-integration:
 	ginkgo -r integration

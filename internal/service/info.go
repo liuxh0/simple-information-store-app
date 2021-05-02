@@ -15,6 +15,36 @@ type Info struct {
 	Value string
 }
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../servicefakes . InfoCreator
+
+type InfoCreator interface {
+	// CreateInfo creates an info in the database.
+	// ValueTooLongError is returned if the value length exceeds the limit.
+	CreateInfo(id, value string) (Info, error)
+}
+
+type InfoService interface {
+	InfoCreator
+
+	// GetInfo returns the info with the given id.
+	// InfoNotFoundError is returned if the info does not exist.
+	GetInfo(id string) (Info, error)
+
+	// UpdateInfo updates an existing info.
+	// ValueTooLongError is returned if the value length exceeds the limit.
+	// InfoNotFoundError is returned if the info does not exist.
+	UpdateInfo(id, newValue string) (Info, error)
+
+	// DeleteInfo deletes an existing info.
+	DeleteInfo(id string) error
+}
+
+type infoService struct{}
+
+func NewInfoService() InfoService {
+	return infoService{}
+}
+
 // ValueTooLongError indicates that the value length exceeds the limit.
 type ValueTooLongError struct {
 	AllowedLen int
@@ -34,9 +64,7 @@ func (err InfoNotFoundError) Error() string {
 	return fmt.Sprintf("Info with id %s does not exist.", err.InfoID)
 }
 
-// CreateInfo creates an info in the database.
-// ValueTooLongError is returned if the value length exceeds the limit.
-func CreateInfo(id, value string) (Info, error) {
+func (_ infoService) CreateInfo(id, value string) (Info, error) {
 	if err := checkValueLen(value); err != nil {
 		return Info{}, *err
 	}
@@ -62,9 +90,7 @@ func CreateInfo(id, value string) (Info, error) {
 	}, nil
 }
 
-// GetInfo returns the info with the given id.
-// InfoNotFoundError is returned if the info does not exist.
-func GetInfo(id string) (Info, error) {
+func (_ infoService) GetInfo(id string) (Info, error) {
 	dynamoDbClient := awshelper.GetDynamoDbClient(env.GetDynamoDbEndpoint())
 	valueTableName := env.GetValueTableName()
 	result, err := dynamoDbClient.GetItem(&dynamodb.GetItemInput{
@@ -90,10 +116,7 @@ func GetInfo(id string) (Info, error) {
 	}, nil
 }
 
-// UpdateInfo updates an existing info.
-// ValueTooLongError is returned if the value length exceeds the limit.
-// InfoNotFoundError is returned if the info does not exist.
-func UpdateInfo(id, newValue string) (Info, error) {
+func (_ infoService) UpdateInfo(id, newValue string) (Info, error) {
 	if err := checkValueLen(newValue); err != nil {
 		return Info{}, *err
 	}
@@ -145,8 +168,7 @@ func UpdateInfo(id, newValue string) (Info, error) {
 	}, nil
 }
 
-// DeleteInfo deletes an existing info.
-func DeleteInfo(id string) error {
+func (_ infoService) DeleteInfo(id string) error {
 	dynamoDbClient := awshelper.GetDynamoDbClient(env.GetDynamoDbEndpoint())
 	valueTableName := env.GetValueTableName()
 	_, err := dynamoDbClient.DeleteItem(&dynamodb.DeleteItemInput{

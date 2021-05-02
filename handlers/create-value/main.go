@@ -11,13 +11,15 @@ import (
 	"github.com/google/uuid"
 )
 
+var infoCreator service.InfoCreator = service.NewInfoService()
+
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	body := request.Body
 
 	// Generate an Id
 	id := uuid.New().String()
 	value := body
-	info, err := service.CreateInfo(id, value)
+	info, err := infoCreator.CreateInfo(id, value)
 
 	switch err := err.(type) {
 	case nil:

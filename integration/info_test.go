@@ -37,7 +37,7 @@ var _ = Describe("POST /i", func() {
 
 	AfterEach(func() {
 		if id, ok := getStringFromJsonString(respBody, "id"); ok && resp.StatusCode == 201 {
-			service.DeleteInfo(id)
+			service.NewInfoService().DeleteInfo(id)
 		}
 	})
 
@@ -67,6 +67,15 @@ var _ = Describe("POST /i", func() {
 
 		It("should return 400", func() {
 			Expect(resp.StatusCode).To(Equal(400))
+		})
+
+		It("should contain an error message", func() {
+			Expect(respBody).To(SatisfyAll(
+				ContainSubstring("length"),
+				ContainSubstring("1001"),
+				ContainSubstring("max"),
+				ContainSubstring("1000"),
+			))
 		})
 	})
 })
@@ -120,7 +129,7 @@ var _ = Describe("GET /i/{id}", func() {
 		})
 
 		AfterEach(func() { // Delete the new item created for the test
-			err := service.DeleteInfo(id)
+			err := service.NewInfoService().DeleteInfo(id)
 			if err != nil {
 				panic(err)
 			}
@@ -179,6 +188,15 @@ var _ = Describe("PUT /i/{id}", func() {
 			It("should return 400", func() {
 				Expect(resp.StatusCode).To(Equal(400))
 			})
+
+			It("should contain an error message", func() {
+				Expect(respBody).To(SatisfyAll(
+					ContainSubstring("length"),
+					ContainSubstring("1001"),
+					ContainSubstring("max"),
+					ContainSubstring("1000"),
+				))
+			})
 		})
 	})
 
@@ -199,7 +217,7 @@ var _ = Describe("PUT /i/{id}", func() {
 		})
 
 		AfterEach(func() { // Delete the new item created for the test
-			err := service.DeleteInfo(id)
+			err := service.NewInfoService().DeleteInfo(id)
 			if err != nil {
 				panic(err)
 			}
@@ -210,7 +228,7 @@ var _ = Describe("PUT /i/{id}", func() {
 			Expect(respBody).To(BeEmpty())
 
 			By("checking if the value is updated", func() {
-				info, err := service.GetInfo(id)
+				info, err := service.NewInfoService().GetInfo(id)
 				if err != nil {
 					panic(err)
 				}
@@ -227,6 +245,15 @@ var _ = Describe("PUT /i/{id}", func() {
 			It("should return 400", func() {
 				Expect(resp.StatusCode).To(Equal(400))
 			})
+
+			It("should contain an error message", func() {
+				Expect(respBody).To(SatisfyAll(
+					ContainSubstring("length"),
+					ContainSubstring("1001"),
+					ContainSubstring("max"),
+					ContainSubstring("1000"),
+				))
+			})
 		})
 	})
 })
@@ -234,7 +261,7 @@ var _ = Describe("PUT /i/{id}", func() {
 func generateNonExistingId() string {
 	for {
 		id := uuid.NewString()
-		_, err := service.GetInfo(id)
+		_, err := service.NewInfoService().GetInfo(id)
 		switch err := err.(type) {
 		case service.InfoNotFoundError:
 			return id
