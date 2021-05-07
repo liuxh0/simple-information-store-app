@@ -16,6 +16,7 @@ type Info struct {
 }
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../servicefakes . InfoCreator
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../servicefakes . InfoGetter
 
 type InfoCreator interface {
 	// CreateInfo creates an info in the database.
@@ -23,12 +24,15 @@ type InfoCreator interface {
 	CreateInfo(id, value string) (Info, error)
 }
 
-type InfoService interface {
-	InfoCreator
-
+type InfoGetter interface {
 	// GetInfo returns the info with the given id.
 	// InfoNotFoundError is returned if the info does not exist.
 	GetInfo(id string) (Info, error)
+}
+
+type InfoService interface {
+	InfoCreator
+	InfoGetter
 
 	// UpdateInfo updates an existing info.
 	// ValueTooLongError is returned if the value length exceeds the limit.

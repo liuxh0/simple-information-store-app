@@ -9,10 +9,12 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+var infoGetter service.InfoGetter = service.NewInfoService()
+
 func handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	id := request.PathParameters["id"]
 
-	info, err := service.NewInfoService().GetInfo(id)
+	info, err := infoGetter.GetInfo(id)
 	switch err := err.(type) {
 	case nil:
 		break
