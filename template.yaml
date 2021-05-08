@@ -10,7 +10,6 @@ Globals:
   Function:
     Runtime: go1.x
     Handler: simple-information-store-app
-    Timeout: 5
     Environment:
       Variables:
         VALUE_TABLE_REF: !Ref ValueTable

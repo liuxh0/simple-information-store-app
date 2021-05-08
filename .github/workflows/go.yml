@@ -1,10 +1,6 @@
 name: Go
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
 
@@ -21,5 +17,56 @@ jobs:
     - name: Build
       run: make build
 
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
     - name: Unit Tests
-      run: go get github.com/onsi/ginkgo/ginkgo && make test-unit
+      run: |
+        go get github.com/onsi/ginkgo/ginkgo
+        make test-unit
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.15
+
+    - name: Set up Docker
+      uses: docker-practice/actions-setup-docker@v1
+
+    - name: Configure AWS region and credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-region: eu-central-1
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+    - name: Integration Tests
+      run: |
+        go get github.com/onsi/ginkgo/ginkgo
+
+        docker network create sam
+        make init-local-dynamodb
+        make build
+        sam local start-api --warm-containers EAGER --docker-network sam &> sam.log &
+        ./scripts/wait-for-sam-local.sh
+
+        make test-integration
+
+    - name: Upload SAM log
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: log
+        path: sam.log
