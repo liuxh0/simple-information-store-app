@@ -18,7 +18,7 @@ func runningInGinkgoTest() bool {
 // GetDynamoDbEndpoint returns the DynamoDB endpoint according to running environment.
 func GetDynamoDbEndpoint() string {
 	if RunningInSamLocal() {
-		return "http://host.docker.internal:8000"
+		return "http://dynamodb:8000"
 	} else if runningInGinkgoTest() {
 		return "http://localhost:8000"
 	}

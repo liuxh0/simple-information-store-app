@@ -55,7 +55,7 @@ var _ = Describe("GetDynamoDbEndpoint()", func() {
 		})
 
 		It("should return a local endpoint", func() {
-			Expect(ret).To(Equal("http://host.docker.internal:8000"))
+			Expect(ret).To(Equal("http://dynamodb:8000"))
 		})
 	})
 
@@ -76,7 +76,7 @@ var _ = Describe("GetDynamoDbEndpoint()", func() {
 		})
 
 		Specify("AWS_SAM_LOCAL should take effect", func() {
-			Expect(ret).To(Equal("http://host.docker.internal:8000"))
+			Expect(ret).To(Equal("http://dynamodb:8000"))
 		})
 	})
 
