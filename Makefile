@@ -1,4 +1,4 @@
-.PHONY: test test-unit test-integration build init-local-dynamodb serve deploy
+.PHONY: test test-unit test-integration build init-local-dynamodb serve deploy deploy-cicd
 
 test: test-unit test-integration
 
@@ -16,7 +16,10 @@ init-local-dynamodb:
 	./scripts/init-local-dynamodb.sh
 
 serve: build
-	sam local start-api
+	sam local start-api --docker-network sam
 
 deploy: build
 	sam deploy
+
+deploy-cicd: build
+	sam deploy --no-confirm-changeset
