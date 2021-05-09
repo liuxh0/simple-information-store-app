@@ -73,6 +73,7 @@ jobs:
 
   deploy:
     needs: [build, unit-tests, integration-tests]
+    if: github.ref == 'refs/heads/master' # Only deploy when on master branch
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
