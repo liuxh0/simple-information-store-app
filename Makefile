@@ -22,4 +22,4 @@ deploy: build
 	sam deploy
 
 deploy-cicd: build
-	sam deploy --no-confirm-changeset
+	sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
