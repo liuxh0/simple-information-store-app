@@ -50,7 +50,7 @@ var _ = Describe("POST /i", func() {
 		Expect(bodyJsonMap["id"]).ShouldNot(BeEmpty())
 	})
 
-	PWhen("request body is empty", func() {
+	When("request body is empty", func() {
 		BeforeEach(func() {
 			reqBody = ""
 		})
